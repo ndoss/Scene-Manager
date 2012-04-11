@@ -1,8 +1,11 @@
 --[[
-SceneManager v1.0.4
+SceneManager v1.0.5
 
 changelog:
 ----------
+
+v1.0.5 - 11.04.2012
+Refactoring ...
 
 v1.0.4 - 08.04.2012
 Added option to filter a list of events during transitions
@@ -24,216 +27,230 @@ Initial release
 
 
 This code is MIT licensed, see http://www.opensource.org/licenses/mit-license.php
-(C) 2010 - 2011 Gideros Mobile 
+(C) 2010 - 2012 Gideros Mobile 
 ]]
+
+Transition = {}
+
+function Transition.interval(t, interval, default, transition)
+	if t >= interval[1] and t<=interval[2] then
+           transition((t - interval[1])/(interval[2]-interval[1])) -- linear mapping of interval to 0,1
+        else
+           transition(default)
+	end
+end
+
+function Transition.outToRight(scene, t, width)
+	scene:setX(   t  * width)
+end
+
+function Transition.inFromRight(scene, t, width)
+	scene:setX((1-t) * width)
+end
+
+function Transition.outToLeft(scene, t, width)
+	scene:setX(  -t  * width)
+end
+
+function Transition.inFromLeft(scene, t, width)
+	scene:setX((t-1) * width)
+end
+
+function Transition.outToBottom(scene, t, height)
+	scene:setY(   t  * height)
+end
+
+function Transition.inFromBottom(scene, t, height)
+	scene:setY((1-t) * height)
+end
+
+function Transition.outToTop(scene, t, height)
+	scene:setY(  -t  * height)
+end
+
+function Transition.inFromTop(scene, t, height)
+	scene:setY((t-1) * height)
+end
+
+function Transition.fadeIn(scene, t)
+	scene:setAlpha(t)
+end
+
+function Transition.fadeOut(scene, t)
+	scene:setAlpha(1-t)
+end
+
+function Transition.shade(scene, t)
+	scene:setColorTransform(1-t, 1-t, 1-t)
+end
+
+function Transition.unshade(scene, t)
+	scene:setColorTransform(t, t, t)
+end
+
+function Transition.horizontalShrink(scene, t, width)
+	scene:setScaleX(1-t)
+        scene:setX(t * width/2)
+end
+
+function Transition.horizontalExpand(scene, t, width)
+	scene:setScaleX(t)
+        scene:setX((1-t) * width/2)
+end
+
+function Transition.verticalShrink(scene, t, height)
+	scene:setScaleY(1-t)
+        scene:setY(t * height/2)
+end
+
+function Transition.verticalExpand(scene, t, height)
+	scene:setScaleY(t)
+	scene:setY((1-t) * height/2)
+end
+
+function Transition.rotate(scene, t, startAngle, stopAngle)
+	scene:setRotation((stopAngle - startAngle) * t + startAngle)
+end
 
 
 SceneManager = Core.class(Sprite)
 
 function SceneManager.moveFromRight(scene1, scene2, t)
 	local width = application:getContentWidth()
-	
-	scene1:setX(-t * width)
-	scene2:setX((1 - t) * width)
+	Transition.outToLeft(scene1, t, width)
+	Transition.inFromRight(scene2, t, width)
 end
 
 function SceneManager.moveFromLeft(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene1:setX(t * width)
-	scene2:setX((t - 1) * width)
+	Transition.outToRight(scene1, t, width)
+	Transition.inFromLeft(scene2, t, width)
 end
 
 function SceneManager.overFromRight(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene2:setX((1 - t) * width)
+	Transition.inFromRight(scene2, t, width)
 end
 
 function SceneManager.overFromLeft(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene2:setX((t - 1) * width)
+	Transition.inFromLeft(scene2, t, width)
 end
 
 function SceneManager.moveFromRightWithFade(scene1, scene2, t)
 	local width = application:getContentWidth()
-	
-	scene1:setAlpha(1 - t)
-	scene1:setX(-t * width)
-	scene2:setX((1 - t) * width)
+        SceneManager.moveFromRight(scene1, scene2, t)
+        Transition.fadeOut(scene1, t)
 end
 
 function SceneManager.moveFromLeftWithFade(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene1:setAlpha(1 - t)
-	scene1:setX(t * width)
-	scene2:setX((t - 1) * width)
+        SceneManager.moveFromLeft(scene1, scene2, t)
+        Transition.fadeOut(scene1, t)
 end
 
 function SceneManager.overFromRightWithFade(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene1:setAlpha(1 - t)
-	scene2:setX((1 - t) * width)
+        Transition.fadeOut(scene1, t)
+	Transition.inFromRight(scene2, t, width)
 end
 
 function SceneManager.overFromLeftWithFade(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	scene1:setAlpha(1 - t)
-	scene2:setX((t - 1) * width)
+        Transition.fadeOut(scene1, t)
+	Transition.inFromLeft(scene2, t, width)
 end
 
 function SceneManager.moveFromBottom(scene1, scene2, t)
 	local height = application:getContentHeight()
-	
-	scene1:setY(-t * height)
-	scene2:setY((1 - t) * height)
+	Transition.outToTop(scene1, t, height)
+	Transition.inFromBottom(scene2, t, height)
 end
 
 function SceneManager.moveFromTop(scene1, scene2, t)
 	local height = application:getContentHeight()
-
-	scene1:setY(t * height)
-	scene2:setY((t - 1) * height)
+	Transition.outToBottom(scene1, t, height)
+	Transition.inFromTop(scene2, t, height)
 end
 
 function SceneManager.overFromBottom(scene1, scene2, t)
 	local height = application:getContentHeight()
-	
-	scene2:setY((1 - t) * height)
+	Transition.inFromBottom(scene2, t, height)
 end
 
 function SceneManager.overFromTop(scene1, scene2, t)
 	local height = application:getContentHeight()
-
-	scene2:setY((t - 1) * height)
+	Transition.inFromTop(scene2, t, height)
 end
 
 function SceneManager.moveFromBottomWithFade(scene1, scene2, t)
 	local height = application:getContentHeight()
-	
-	scene1:setAlpha(1 - t)
-	scene1:setY(-t * height)
-	scene2:setY((1 - t) * height)
+        SceneManager.moveFromBottom(scene1, scene2, t)
+        Transition.fadeOut(scene1, t)
 end
 
 function SceneManager.moveFromTopWithFade(scene1, scene2, t)
 	local height = application:getContentHeight()
-
-	scene1:setAlpha(1 - t)
-	scene1:setY(t * height)
-	scene2:setY((t - 1) * height)
+        SceneManager.moveFromTop(scene1, scene2, t)
+        Transition.fadeOut(scene1, t)
 end
-
 
 function SceneManager.overFromBottomWithFade(scene1, scene2, t)
 	local height = application:getContentHeight()
-	
-	scene1:setAlpha(1 - t)
-	scene2:setY((1 - t) * height)
+	Transition.fadeOut(scene1, t)
+	Transition.inFromBottom(scene2, t, height)
 end
 
 function SceneManager.overFromTopWithFade(scene1, scene2, t)
 	local height = application:getContentHeight()
-
-	scene1:setAlpha(1 - t)
-	scene2:setY((t - 1) * height)
+	Transition.fadeOut(scene1, t)
+	Transition.inFromTop(scene2, t, height)
 end
 
 function SceneManager.fade(scene1, scene2, t)
-	if t < 0.5 then
-		scene1:setAlpha((0.5 - t) * 2)
-	else
-		scene1:setAlpha(0)
-	end
-
-	if t < 0.5 then
-		scene2:setAlpha(0)
-	else
-		scene2:setAlpha((t - 0.5) * 2)
-	end
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.fadeOut(scene1, t) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.fadeIn (scene2, t) end)
 end
 
 function SceneManager.crossfade(scene1, scene2, t)
-	scene1:setAlpha(1 - t)
-	scene2:setAlpha(t)
+	Transition.fadeOut(scene1, t)
+	Transition.fadeIn(scene2, t)
 end
 
 function SceneManager.flip(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	if t < 0.5 then
-		local s = (0.5 - t) * 2
-		scene1:setScaleX(s)
-		scene1:setX((1 - s) * width * 0.5)
-	else
-		scene1:setScaleX(0)
-		scene1:setX(width * 0.5)
-	end
-
-	if t < 0.5 then
-		scene2:setScaleX(0)
-		scene2:setX(width * 0.5)
-	else
-		local s = (t - 0.5) * 2
-		scene2:setScaleX(s)
-		scene2:setX((1 - s) * width * 0.5)
-	end
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.horizontalShrink(scene1, t, width) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.horizontalExpand(scene2, t, width) end)
 end
 
 function SceneManager.flipWithFade(scene1, scene2, t)
 	local width = application:getContentWidth()
-
-	if t < 0.5 then
-		local s = (0.5 - t) * 2
-		scene1:setScaleX(s)
-		scene1:setX((1 - s) * width * 0.5)
-		scene1:setAlpha(s)
-	else
-		scene1:setScaleX(0)
-		scene1:setX(width * 0.5)
-		scene1:setAlpha(0)
-	end
-
-	if t < 0.5 then
-		scene2:setScaleX(0)
-		scene2:setX(width * 0.5)
-		scene2:setAlpha(0)
-	else
-		local s = (t - 0.5) * 2
-		scene2:setScaleX(s)
-		scene2:setX((1 - s) * width * 0.5)
-		scene2:setAlpha(s)
-	end
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.horizontalShrink(scene1, t, width) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.horizontalExpand(scene2, t, width) end)
+        SceneManager.fade(scene1, scene2, t)
 end
 
 function SceneManager.flipWithShade(scene1, scene2, t)
 	local width = application:getContentWidth()
+        SceneManager.flip(scene1, scene2, t)
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.shade(scene1, t) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.unshade(scene2, t) end)
+end
 
-	if t < 0.5 then
-		local s = (0.5 - t) * 2
-		scene1:setScaleX(s)
-		scene1:setX((1 - s) * width * 0.5)
-		scene1:setColorTransform(1 - t, 1 - t, 1 - t, 1)
-	else
-		scene1:setScaleX(0)
-		scene1:setX(width * 0.5)
-		scene1:setColorTransform(0.5, 0.5, 0.5, 1)
-	end
+function SceneManager.zoomOutZoomIn(scene1, scene2, t)
+	local width  = application:getContentWidth()
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.horizontalShrink(scene1, t, width) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.horizontalExpand(scene2, t, width) end)
 
-	if t < 0.5 then
-		scene2:setScaleX(0)
-		scene2:setX(width * 0.5)
-		scene2:setColorTransform(0.5, 0.5, 0.5, 1)
-	else
-		local s = (t - 0.5) * 2
-		scene2:setScaleX(s)
-		scene2:setX((1 - s) * width * 0.5)
-		scene2:setColorTransform(t, t, t, 1)
-	end
+	local height = application:getContentHeight()
+	Transition.interval(t, { 0.0, 0.5 }, 1, function(t) Transition.verticalShrink(scene1, t, height) end)
+	Transition.interval(t, { 0.5, 1.0 }, 0, function(t) Transition.verticalExpand(scene2, t, height) end)
+end
+
+function SceneManager.rotatingZoomOutZoomIn(scene1, scene2, t)
+	SceneManager.zoomOutZoomIn(scene1, scene2, t)
+	Transition.rotate(scene1, t, 0, 720)
+	Transition.rotate(scene2, t, 0, 720)
 end
 
 local function dispatchEvent(dispatcher, name)
